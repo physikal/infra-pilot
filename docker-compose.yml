@@ -1,0 +1,16 @@
+services:
+  infrapilot:
+    image: infrapilot:latest
+    build: .
+    container_name: infrapilot
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - infrapilot-data:/data
+    environment:
+      - NODE_ENV=production
+      - DATA_DIR=/data
+
+volumes:
+  infrapilot-data:
