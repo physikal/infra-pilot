@@ -1,15 +1,29 @@
 import { useState, useEffect } from "react";
+import {
+  Server,
+  Play,
+  Square,
+  RotateCw,
+  ChevronDown,
+  ChevronRight,
+  Upload,
+  HardDrive,
+  X,
+  AlertTriangle,
+} from "lucide-react";
 import { api } from "../api.js";
 
 function StatusBadge({ status }) {
-  const colors = {
-    running: "bg-green-900/50 text-green-300 border-green-700",
-    dead: "bg-red-900/50 text-red-300 border-red-700",
-    pending: "bg-yellow-900/50 text-yellow-300 border-yellow-700",
+  const styles = {
+    running: "badge-success",
+    dead: "badge-danger",
+    pending: "badge-warning",
+    ready: "badge-success",
+    initializing: "badge-warning",
+    down: "badge-danger",
   };
-  const cls = colors[status] || "bg-gray-800 text-gray-400 border-gray-700";
   return (
-    <span className={`text-xs px-2 py-0.5 rounded border ${cls}`}>
+    <span className={styles[status] || "badge-neutral"}>
       {status}
     </span>
   );
@@ -35,30 +49,42 @@ function DeployModal({ onClose, onDeploy }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-2xl p-6">
-        <h3 className="text-lg font-bold text-white mb-4">Deploy Job</h3>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div className="card w-full max-w-2xl p-6 animate-slide-up">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+              <Upload className="w-4 h-4 text-accent" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">
+              Deploy Job
+            </h3>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
         <textarea
           value={hcl}
           onChange={(e) => setHcl(e.target.value)}
           placeholder="Paste your HCL job specification here..."
-          className="w-full h-64 bg-gray-800 border border-gray-700 rounded p-3 text-white
-                     font-mono text-sm focus:outline-none focus:border-blue-500 resize-none"
+          className="input-field h-64 font-mono resize-none"
           autoFocus
         />
-        {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+        {error && (
+          <div className="flex items-center gap-2 mt-3 text-sm text-red-400">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            {error}
+          </div>
+        )}
         <div className="flex justify-end gap-3 mt-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-400 hover:text-white"
-          >
+          <button onClick={onClose} className="btn-ghost">
             Cancel
           </button>
           <button
             onClick={handleDeploy}
             disabled={!hcl.trim() || deploying}
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700
-                       disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-primary"
           >
             {deploying ? "Deploying..." : "Deploy"}
           </button>
@@ -80,19 +106,110 @@ function AllocationsView({ jobId }) {
       .finally(() => setLoading(false));
   }, [jobId]);
 
-  if (loading) return <div className="text-gray-500 text-sm p-2">Loading...</div>;
-  if (allocs.length === 0) return <div className="text-gray-600 text-sm p-2">No allocations</div>;
+  if (loading) {
+    return (
+      <div className="px-4 pb-3 space-y-2">
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="skeleton h-8 w-full rounded-lg" />
+        ))}
+      </div>
+    );
+  }
+
+  if (allocs.length === 0) {
+    return (
+      <div className="px-4 pb-3 text-sm text-gray-600">
+        No allocations
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-2 space-y-1">
+    <div className="px-4 pb-3 space-y-1.5">
       {allocs.map((a) => (
-        <div key={a.ID} className="flex items-center gap-3 text-xs bg-gray-800/50 rounded px-3 py-2">
-          <span className="text-gray-500 font-mono">{a.ID.slice(0, 8)}</span>
+        <div
+          key={a.ID}
+          className="flex items-center gap-3 text-xs bg-surface-2 rounded-lg px-3 py-2"
+        >
+          <span className="text-gray-600 font-mono">
+            {a.ID.slice(0, 8)}
+          </span>
           <StatusBadge status={a.ClientStatus} />
           <span className="text-gray-400">{a.TaskGroup}</span>
-          <span className="text-gray-600 ml-auto">{a.NodeName}</span>
+          <span className="text-gray-600 ml-auto font-mono">
+            {a.NodeName}
+          </span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function JobRow({ job, expanded, onToggle, onAction }) {
+  return (
+    <div className="card-hover">
+      <div className="flex items-center gap-3 p-4">
+        <button
+          onClick={onToggle}
+          className="text-gray-600 hover:text-gray-300 transition-colors"
+        >
+          {expanded ? (
+            <ChevronDown className="w-4 h-4" />
+          ) : (
+            <ChevronRight className="w-4 h-4" />
+          )}
+        </button>
+        <div className="flex-1 min-w-0">
+          <span className="text-white font-medium text-sm">
+            {job.Name}
+          </span>
+          <span className="text-gray-600 text-xs ml-2">{job.Type}</span>
+        </div>
+        <StatusBadge status={job.Status} />
+        <div className="flex gap-1.5 ml-3">
+          <button
+            onClick={() => onAction(job.ID, "restart")}
+            className="p-1.5 rounded-md text-gray-500 hover:text-white hover:bg-white/[0.06] transition-all"
+            title="Restart"
+          >
+            <RotateCw className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onAction(job.ID, "stop")}
+            className="p-1.5 rounded-md text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+            title="Stop"
+          >
+            <Square className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+      {expanded && <AllocationsView jobId={job.ID} />}
+    </div>
+  );
+}
+
+function NodeRow({ node }) {
+  return (
+    <div className="card-hover p-4 flex items-center gap-4">
+      <div
+        className={`w-2 h-2 rounded-full ${
+          node.Status === "ready"
+            ? "bg-emerald-400 shadow-sm shadow-emerald-400/50"
+            : "bg-red-400 shadow-sm shadow-red-400/50"
+        }`}
+      />
+      <div className="flex-1 min-w-0">
+        <span className="text-white text-sm font-medium">
+          {node.Name}
+        </span>
+        <span className="text-gray-600 text-xs ml-2">
+          {node.Datacenter}
+        </span>
+      </div>
+      <StatusBadge status={node.Status} />
+      <span className="text-gray-600 text-xs font-mono hidden sm:block">
+        {node.Drivers ? Object.keys(node.Drivers).join(", ") : ""}
+      </span>
     </div>
   );
 }
@@ -138,114 +255,83 @@ export default function NomadPage() {
 
   if (error) {
     return (
-      <div className="bg-red-900/30 border border-red-800 rounded p-4 text-red-300">
-        {error}
+      <div className="card p-6 border-red-500/20">
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-400" />
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Nomad</h2>
+    <div className="animate-fade-in">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+            <Server className="w-5 h-5 text-accent" />
+          </div>
+          <div>
+            <h2 className="page-title">Nomad</h2>
+            <p className="text-sm text-gray-500">
+              Manage jobs and nodes
+            </p>
+          </div>
+        </div>
         <button
           onClick={() => setShowDeploy(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          className="btn-primary flex items-center gap-2"
         >
+          <Upload className="w-4 h-4" />
           Deploy Job
         </button>
       </div>
 
-      <div className="flex gap-4 mb-4 border-b border-gray-800">
+      <div className="flex gap-6 mb-6 border-b border-white/[0.06]">
         <button
           onClick={() => setTab("jobs")}
-          className={`pb-2 text-sm ${
-            tab === "jobs"
-              ? "text-white border-b-2 border-blue-500"
-              : "text-gray-500 hover:text-gray-300"
-          }`}
+          className={tab === "jobs" ? "tab-btn-active" : "tab-btn-inactive"}
         >
           Jobs ({jobs.length})
         </button>
         <button
           onClick={() => setTab("nodes")}
-          className={`pb-2 text-sm ${
-            tab === "nodes"
-              ? "text-white border-b-2 border-blue-500"
-              : "text-gray-500 hover:text-gray-300"
-          }`}
+          className={tab === "nodes" ? "tab-btn-active" : "tab-btn-inactive"}
         >
           Nodes ({nodes.length})
         </button>
       </div>
 
       {loading ? (
-        <div className="text-gray-400">Loading...</div>
+        <div className="space-y-2">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="skeleton h-14 w-full rounded-xl" />
+          ))}
+        </div>
       ) : tab === "jobs" ? (
         <div className="space-y-2">
           {jobs.length === 0 && (
-            <p className="text-gray-600">No jobs found.</p>
+            <div className="card p-8 text-center">
+              <Server className="w-8 h-8 text-gray-700 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">No jobs found.</p>
+            </div>
           )}
           {jobs.map((job) => (
-            <div key={job.ID} className="bg-gray-900 border border-gray-800 rounded-lg">
-              <div className="flex items-center gap-3 p-4">
-                <button
-                  onClick={() =>
-                    setExpandedJob(expandedJob === job.ID ? null : job.ID)
-                  }
-                  className="text-gray-500 hover:text-white"
-                >
-                  {expandedJob === job.ID ? "\u25BC" : "\u25B6"}
-                </button>
-                <div className="flex-1">
-                  <span className="text-white font-medium">{job.Name}</span>
-                  <span className="text-gray-600 text-xs ml-2">{job.Type}</span>
-                </div>
-                <StatusBadge status={job.Status} />
-                <div className="flex gap-2 ml-4">
-                  <button
-                    onClick={() => handleAction(job.ID, "restart")}
-                    className="text-xs px-2 py-1 text-gray-400 hover:text-white
-                               bg-gray-800 rounded hover:bg-gray-700"
-                  >
-                    Restart
-                  </button>
-                  <button
-                    onClick={() => handleAction(job.ID, "stop")}
-                    className="text-xs px-2 py-1 text-gray-400 hover:text-red-400
-                               bg-gray-800 rounded hover:bg-gray-700"
-                  >
-                    Stop
-                  </button>
-                </div>
-              </div>
-              {expandedJob === job.ID && <AllocationsView jobId={job.ID} />}
-            </div>
+            <JobRow
+              key={job.ID}
+              job={job}
+              expanded={expandedJob === job.ID}
+              onToggle={() =>
+                setExpandedJob(expandedJob === job.ID ? null : job.ID)
+              }
+              onAction={handleAction}
+            />
           ))}
         </div>
       ) : (
         <div className="space-y-2">
           {nodes.map((node) => (
-            <div
-              key={node.ID}
-              className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex items-center gap-4"
-            >
-              <div
-                className={`w-2.5 h-2.5 rounded-full ${
-                  node.Status === "ready" ? "bg-green-500" : "bg-red-500"
-                }`}
-              />
-              <div className="flex-1">
-                <span className="text-white">{node.Name}</span>
-                <span className="text-gray-600 text-xs ml-2">
-                  {node.Datacenter}
-                </span>
-              </div>
-              <span className="text-gray-500 text-sm">{node.Status}</span>
-              <span className="text-gray-600 text-xs">
-                {node.Drivers ? Object.keys(node.Drivers).join(", ") : ""}
-              </span>
-            </div>
+            <NodeRow key={node.ID} node={node} />
           ))}
         </div>
       )}

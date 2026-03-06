@@ -1,27 +1,47 @@
 import { useState } from "react";
+import {
+  Compass,
+  Server,
+  Monitor,
+  Globe,
+  Network,
+  Check,
+  AlertTriangle,
+  ArrowRight,
+  SkipForward,
+} from "lucide-react";
 import { api } from "../api.js";
 
-const STEPS = ["instance", "nomad", "proxmox", "cloudflare", "traefik", "summary"];
+const STEPS = [
+  "instance",
+  "nomad",
+  "proxmox",
+  "cloudflare",
+  "traefik",
+  "summary",
+];
 
-function StepIndicator({ current, steps }) {
+function StepIndicator({ current }) {
   return (
-    <div className="flex items-center justify-center gap-2 mb-8">
-      {steps.map((step, i) => (
-        <div key={step} className="flex items-center gap-2">
+    <div className="flex items-center justify-center gap-1 mb-10">
+      {STEPS.map((step, i) => (
+        <div key={step} className="flex items-center gap-1">
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
               i < current
-                ? "bg-green-600 text-white"
+                ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30"
                 : i === current
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-400"
+                  ? "bg-accent/20 text-accent ring-1 ring-accent/30"
+                  : "bg-surface-2 text-gray-600"
             }`}
           >
-            {i < current ? "\u2713" : i + 1}
+            {i < current ? <Check className="w-3.5 h-3.5" /> : i + 1}
           </div>
-          {i < steps.length - 1 && (
+          {i < STEPS.length - 1 && (
             <div
-              className={`w-8 h-0.5 ${i < current ? "bg-green-600" : "bg-gray-700"}`}
+              className={`w-6 h-px transition-colors duration-300 ${
+                i < current ? "bg-emerald-500/40" : "bg-white/[0.06]"
+              }`}
             />
           )}
         </div>
@@ -48,10 +68,12 @@ function InstanceStep({ onNext }) {
   }
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-2">Name your instance</h2>
-      <p className="text-gray-400 mb-6">
-        What do you want to call this portal? This appears in the sidebar.
+    <div className="animate-slide-up">
+      <h2 className="text-xl font-bold text-white mb-2">
+        Name your instance
+      </h2>
+      <p className="text-sm text-gray-500 mb-6">
+        What should we call this portal? It appears in the sidebar.
       </p>
       <input
         type="text"
@@ -59,24 +81,37 @@ function InstanceStep({ onNext }) {
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleNext()}
         placeholder="e.g. Homelab, Production, Dev Stack"
-        className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-white
-                   placeholder-gray-500 focus:outline-none focus:border-blue-500"
+        className="input-field text-base py-3"
         autoFocus
       />
-      {error && <p className="text-red-400 mt-2 text-sm">{error}</p>}
+      {error && (
+        <div className="flex items-center gap-2 mt-3 text-sm text-red-400">
+          <AlertTriangle className="w-3.5 h-3.5" />
+          {error}
+        </div>
+      )}
       <div className="mt-6 flex justify-end">
         <button
           onClick={handleNext}
-          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          className="btn-primary flex items-center gap-2"
         >
           Next
+          <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>
   );
 }
 
-function IntegrationStep({ type, title, fields, instructions, onNext, onSkip }) {
+function IntegrationStep({
+  type,
+  title,
+  icon: Icon,
+  fields,
+  instructions,
+  onNext,
+  onSkip,
+}) {
   const [values, setValues] = useState(
     Object.fromEntries(fields.map((f) => [f.key, ""]))
   );
@@ -121,32 +156,40 @@ function IntegrationStep({ type, title, fields, instructions, onNext, onSkip }) 
     .every((f) => values[f.key]?.trim());
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-2">{title}</h2>
-      <div className="bg-gray-800/50 border border-gray-700 rounded p-4 mb-6">
-        <h3 className="text-sm font-medium text-gray-300 mb-2">
-          How to get your credentials:
+    <div className="animate-slide-up">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+          <Icon className="w-4.5 h-4.5 text-accent" />
+        </div>
+        <h2 className="text-xl font-bold text-white">{title}</h2>
+      </div>
+
+      <div className="bg-surface-2 rounded-lg p-4 mb-6">
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+          How to get your credentials
         </h3>
-        <ol className="text-sm text-gray-400 space-y-1 list-decimal list-inside">
+        <ol className="text-sm text-gray-500 space-y-1 list-decimal list-inside">
           {instructions.map((step, i) => (
             <li key={i}>{step}</li>
           ))}
         </ol>
       </div>
-      <div className="space-y-4 mb-6">
+
+      <div className="space-y-3 mb-6">
         {fields.map((field) => (
           <div key={field.key}>
-            <label className="block text-sm text-gray-300 mb-1">
+            <label className="block text-xs text-gray-500 mb-1.5 font-medium">
               {field.label}
-              {field.required && <span className="text-red-400 ml-1">*</span>}
+              {field.required && (
+                <span className="text-red-400 ml-1">*</span>
+              )}
             </label>
             <input
               type={field.type || "text"}
               value={values[field.key]}
               onChange={(e) => setValue(field.key, e.target.value)}
               placeholder={field.placeholder}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white
-                         placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+              className="input-field"
             />
           </div>
         ))}
@@ -154,50 +197,63 @@ function IntegrationStep({ type, title, fields, instructions, onNext, onSkip }) 
 
       {testResult && (
         <div
-          className={`p-3 rounded mb-4 text-sm ${
+          className={`flex items-center gap-2 p-3 rounded-lg mb-4 text-sm ${
             testResult.ok
-              ? "bg-green-900/40 border border-green-700 text-green-300"
-              : "bg-red-900/40 border border-red-700 text-red-300"
+              ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20"
+              : "bg-red-500/10 text-red-400 ring-1 ring-red-500/20"
           }`}
         >
           {testResult.ok ? (
-            "Connection successful!"
+            <>
+              <Check className="w-4 h-4 shrink-0" />
+              Connection successful
+            </>
           ) : (
             <>
-              <p>Connection failed: {testResult.error}</p>
-              {testResult.suggestion && (
-                <p className="mt-1 text-gray-400">{testResult.suggestion}</p>
-              )}
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <div>
+                <p>Connection failed: {testResult.error}</p>
+                {testResult.suggestion && (
+                  <p className="text-gray-400 mt-1 text-xs">
+                    {testResult.suggestion}
+                  </p>
+                )}
+              </div>
             </>
           )}
         </div>
       )}
 
-      {error && <p className="text-red-400 mb-4 text-sm">{error}</p>}
+      {error && (
+        <div className="flex items-center gap-2 mb-4 text-sm text-red-400">
+          <AlertTriangle className="w-3.5 h-3.5" />
+          {error}
+        </div>
+      )}
 
       <div className="flex justify-between">
         <button
           onClick={() => onSkip({ [type]: false })}
-          className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+          className="btn-ghost flex items-center gap-2 text-xs"
         >
+          <SkipForward className="w-3.5 h-3.5" />
           Skip
         </button>
         <div className="flex gap-3">
           <button
             onClick={handleTest}
             disabled={!hasRequired || testing}
-            className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600
-                       transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-secondary"
           >
             {testing ? "Testing..." : "Test Connection"}
           </button>
           <button
             onClick={handleSave}
             disabled={!testResult?.ok || saving}
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700
-                       transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-primary flex items-center gap-2"
           >
             {saving ? "Saving..." : "Save & Next"}
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -215,40 +271,58 @@ function SummaryStep({ results, onFinish }) {
   }
 
   const integrations = [
-    { key: "nomad", label: "Nomad" },
-    { key: "proxmox", label: "Proxmox" },
-    { key: "cloudflare", label: "Cloudflare" },
-    { key: "traefik", label: "Traefik" },
+    { key: "nomad", label: "Nomad", icon: Server },
+    { key: "proxmox", label: "Proxmox", icon: Monitor },
+    { key: "cloudflare", label: "Cloudflare", icon: Globe },
+    { key: "traefik", label: "Traefik", icon: Network },
   ];
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-2">Setup Summary</h2>
-      <p className="text-gray-400 mb-6">
-        Review your integrations. You can reconfigure any of these later in
-        Settings.
+    <div className="animate-slide-up">
+      <h2 className="text-xl font-bold text-white mb-2">
+        Setup Complete
+      </h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Review your integrations. Reconfigure anytime in Settings.
       </p>
-      <div className="space-y-3 mb-8">
-        <div className="flex items-center gap-3 bg-gray-800 rounded p-3">
-          <div className="w-3 h-3 rounded-full bg-green-500" />
-          <span className="text-white">Instance: {results.instanceName}</span>
+      <div className="space-y-2 mb-8">
+        <div className="flex items-center gap-3 bg-surface-2 rounded-lg p-3">
+          <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <Check className="w-3 h-3 text-emerald-400" />
+          </div>
+          <span className="text-white text-sm font-medium">
+            {results.instanceName}
+          </span>
+          <span className="text-gray-600 text-xs ml-auto">Instance</span>
         </div>
         {integrations.map((int) => (
           <div
             key={int.key}
-            className="flex items-center gap-3 bg-gray-800 rounded p-3"
+            className="flex items-center gap-3 bg-surface-2 rounded-lg p-3"
           >
             <div
-              className={`w-3 h-3 rounded-full ${
-                results[int.key] ? "bg-green-500" : "bg-gray-600"
+              className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                results[int.key]
+                  ? "bg-emerald-500/20"
+                  : "bg-white/[0.04]"
               }`}
-            />
-            <span className={results[int.key] ? "text-white" : "text-gray-500"}>
-              {int.label}
-              {!results[int.key] && (
-                <span className="text-gray-600 ml-2">- skipped</span>
+            >
+              {results[int.key] ? (
+                <Check className="w-3 h-3 text-emerald-400" />
+              ) : (
+                <int.icon className="w-3 h-3 text-gray-600" />
               )}
+            </div>
+            <span
+              className={`text-sm font-medium ${
+                results[int.key] ? "text-white" : "text-gray-600"
+              }`}
+            >
+              {int.label}
             </span>
+            {!results[int.key] && (
+              <span className="badge-neutral ml-auto">skipped</span>
+            )}
           </div>
         ))}
       </div>
@@ -256,10 +330,12 @@ function SummaryStep({ results, onFinish }) {
         <button
           onClick={handleFinish}
           disabled={finishing}
-          className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700
-                     transition-colors font-medium disabled:opacity-50"
+          className="px-8 py-3 bg-emerald-600 text-white rounded-lg font-medium
+                     hover:bg-emerald-500 transition-all active:scale-[0.98]
+                     disabled:opacity-50 flex items-center gap-2"
         >
-          {finishing ? "Finishing..." : "Finish Setup"}
+          {finishing ? "Finishing..." : "Launch Dashboard"}
+          <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -321,7 +397,7 @@ const PROXMOX_INSTRUCTIONS = [
   "Open your Proxmox UI (usually port 8006)",
   "Go to Datacenter > Permissions > API Tokens",
   'Click "Add" to create a new API token',
-  "Uncheck \"Privilege Separation\" for full access",
+  'Uncheck "Privilege Separation" for full access',
   "Copy the Token ID and Secret and paste them below",
 ];
 
@@ -375,19 +451,23 @@ export default function SetupWizard({ onComplete }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-surface-0">
       <div className="w-full max-w-xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Infra Pilot</h1>
-          <p className="text-gray-400 mt-1">Setup Wizard</p>
+          <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center mx-auto mb-4">
+            <Compass className="w-6 h-6 text-accent" />
+          </div>
+          <h1 className="text-2xl font-bold text-white">Infra Pilot</h1>
+          <p className="text-sm text-gray-500 mt-1">Setup Wizard</p>
         </div>
-        <StepIndicator current={step} steps={STEPS} />
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+        <StepIndicator current={step} />
+        <div className="card p-6">
           {step === 0 && <InstanceStep onNext={advance} />}
           {step === 1 && (
             <IntegrationStep
               type="nomad"
               title="Connect Nomad"
+              icon={Server}
               fields={NOMAD_FIELDS}
               instructions={NOMAD_INSTRUCTIONS}
               onNext={advance}
@@ -398,6 +478,7 @@ export default function SetupWizard({ onComplete }) {
             <IntegrationStep
               type="proxmox"
               title="Connect Proxmox"
+              icon={Monitor}
               fields={PROXMOX_FIELDS}
               instructions={PROXMOX_INSTRUCTIONS}
               onNext={advance}
@@ -408,6 +489,7 @@ export default function SetupWizard({ onComplete }) {
             <IntegrationStep
               type="cloudflare"
               title="Connect Cloudflare"
+              icon={Globe}
               fields={CLOUDFLARE_FIELDS}
               instructions={CLOUDFLARE_INSTRUCTIONS}
               onNext={advance}
@@ -418,6 +500,7 @@ export default function SetupWizard({ onComplete }) {
             <IntegrationStep
               type="traefik"
               title="Connect Traefik"
+              icon={Network}
               fields={TRAEFIK_FIELDS}
               instructions={TRAEFIK_INSTRUCTIONS}
               onNext={advance}

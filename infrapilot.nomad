@@ -7,6 +7,10 @@ job "infrapilot" {
     value     = "nomad-wkr-01"
   }
 
+  meta {
+    deploy_version = "4"
+  }
+
   group "infrapilot" {
     count = 1
 

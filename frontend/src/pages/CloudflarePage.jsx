@@ -1,4 +1,12 @@
 import { useState, useEffect } from "react";
+import {
+  Globe,
+  Plus,
+  Trash2,
+  Zap,
+  Shield,
+  AlertTriangle,
+} from "lucide-react";
 import { api } from "../api.js";
 
 function QuickAddForm({ zones, onAdd }) {
@@ -27,17 +35,22 @@ function QuickAddForm({ zones, onAdd }) {
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6">
-      <h3 className="text-sm font-medium text-gray-400 mb-3">
-        Quick Add: Point Domain to IP
-      </h3>
+    <div className="card p-4 mb-6">
+      <div className="flex items-center gap-2 mb-3">
+        <Zap className="w-3.5 h-3.5 text-amber-400" />
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          Quick Add: Point Domain to IP
+        </h3>
+      </div>
       <div className="flex flex-wrap gap-3 items-end">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Zone</label>
+          <label className="block text-xs text-gray-500 mb-1.5 font-medium">
+            Zone
+          </label>
           <select
             value={zoneId}
             onChange={(e) => setZoneId(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+            className="input-field w-auto"
           >
             <option value="">Select zone</option>
             {zones.map((z) => (
@@ -48,35 +61,43 @@ function QuickAddForm({ zones, onAdd }) {
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Domain</label>
+          <label className="block text-xs text-gray-500 mb-1.5 font-medium">
+            Domain
+          </label>
           <input
             type="text"
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
             placeholder="sub.example.com"
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+            className="input-field w-auto"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">IP</label>
+          <label className="block text-xs text-gray-500 mb-1.5 font-medium">
+            IP
+          </label>
           <input
             type="text"
             value={ip}
             onChange={(e) => setIp(e.target.value)}
             placeholder="10.0.0.1"
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+            className="input-field w-auto"
           />
         </div>
         <button
           onClick={handleAdd}
           disabled={adding}
-          className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700
-                     disabled:opacity-40"
+          className="btn-primary"
         >
           {adding ? "Adding..." : "Add"}
         </button>
       </div>
-      {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+      {error && (
+        <div className="flex items-center gap-2 mt-2 text-sm text-red-400">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          {error}
+        </div>
+      )}
     </div>
   );
 }
@@ -95,22 +116,32 @@ function RecordRow({ record, zoneId, onDelete, onRefresh }) {
   }
 
   return (
-    <tr className="border-b border-gray-800 hover:bg-gray-800/50">
-      <td className="px-3 py-2 text-xs text-gray-500">{record.type}</td>
-      <td className="px-3 py-2 text-sm text-white">{record.name}</td>
-      <td className="px-3 py-2 text-sm text-gray-300 font-mono">
+    <tr className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors group">
+      <td className="px-4 py-3">
+        <span className="badge-neutral font-mono">{record.type}</span>
+      </td>
+      <td className="px-4 py-3 text-sm text-white">{record.name}</td>
+      <td className="px-4 py-3 text-sm text-gray-400 font-mono">
         {record.content}
       </td>
-      <td className="px-3 py-2 text-xs text-gray-500">
-        {record.proxied ? "Proxied" : "DNS only"}
+      <td className="px-4 py-3">
+        {record.proxied ? (
+          <span className="flex items-center gap-1.5 text-xs text-orange-400">
+            <Shield className="w-3 h-3" />
+            Proxied
+          </span>
+        ) : (
+          <span className="text-xs text-gray-600">DNS only</span>
+        )}
       </td>
-      <td className="px-3 py-2 text-right">
+      <td className="px-4 py-3 text-right">
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="text-xs text-gray-500 hover:text-red-400 disabled:opacity-40"
+          className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-500
+                     hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-40"
         >
-          {deleting ? "..." : "Delete"}
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </td>
     </tr>
@@ -177,32 +208,51 @@ export default function CloudflarePage() {
 
   if (error) {
     return (
-      <div className="bg-red-900/30 border border-red-800 rounded p-4 text-red-300">
-        {error}
+      <div className="card p-6 border-red-500/20">
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-400" />
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-white mb-6">Cloudflare DNS</h2>
+    <div className="animate-fade-in">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+            <Globe className="w-5 h-5 text-accent" />
+          </div>
+          <div>
+            <h2 className="page-title">Cloudflare DNS</h2>
+            <p className="text-sm text-gray-500">
+              Manage DNS records
+            </p>
+          </div>
+        </div>
+      </div>
 
       {!loading && <QuickAddForm zones={zones} onAdd={handleQuickAdd} />}
 
       {loading ? (
-        <div className="text-gray-400">Loading zones...</div>
+        <div className="space-y-2">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="skeleton h-12 w-full rounded-xl" />
+          ))}
+        </div>
       ) : (
         <>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex gap-2">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex gap-1.5 flex-wrap">
               {zones.map((z) => (
                 <button
                   key={z.id}
                   onClick={() => loadRecords(z.id)}
-                  className={`px-3 py-1.5 rounded text-sm ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     selectedZone === z.id
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-800 text-gray-400 hover:text-white"
+                      ? "bg-accent/15 text-accent-hover ring-1 ring-accent/30"
+                      : "bg-surface-2 text-gray-500 hover:text-gray-300 hover:bg-surface-3"
                   }`}
                 >
                   {z.name}
@@ -211,91 +261,106 @@ export default function CloudflarePage() {
             </div>
             <button
               onClick={() => setShowAdd(!showAdd)}
-              className="ml-auto px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+              className="ml-auto btn-primary flex items-center gap-2 text-xs"
             >
+              <Plus className="w-3.5 h-3.5" />
               Add Record
             </button>
           </div>
 
           {showAdd && (
-            <div className="bg-gray-900 border border-gray-800 rounded p-4 mb-4 flex flex-wrap gap-3 items-end">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Type</label>
-                <select
-                  value={newRecord.type}
-                  onChange={(e) =>
-                    setNewRecord((r) => ({ ...r, type: e.target.value }))
-                  }
-                  className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+            <div className="card p-4 mb-4 animate-slide-up">
+              <div className="flex flex-wrap gap-3 items-end">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1.5 font-medium">
+                    Type
+                  </label>
+                  <select
+                    value={newRecord.type}
+                    onChange={(e) =>
+                      setNewRecord((r) => ({ ...r, type: e.target.value }))
+                    }
+                    className="input-field w-auto"
+                  >
+                    <option value="A">A</option>
+                    <option value="CNAME">CNAME</option>
+                    <option value="AAAA">AAAA</option>
+                    <option value="TXT">TXT</option>
+                    <option value="MX">MX</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1.5 font-medium">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newRecord.name}
+                    onChange={(e) =>
+                      setNewRecord((r) => ({ ...r, name: e.target.value }))
+                    }
+                    placeholder="subdomain"
+                    className="input-field w-auto"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1.5 font-medium">
+                    Content
+                  </label>
+                  <input
+                    type="text"
+                    value={newRecord.content}
+                    onChange={(e) =>
+                      setNewRecord((r) => ({
+                        ...r,
+                        content: e.target.value,
+                      }))
+                    }
+                    placeholder="10.0.0.1"
+                    className="input-field w-auto"
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-xs text-gray-400 py-2.5">
+                  <input
+                    type="checkbox"
+                    checked={newRecord.proxied}
+                    onChange={(e) =>
+                      setNewRecord((r) => ({
+                        ...r,
+                        proxied: e.target.checked,
+                      }))
+                    }
+                    className="rounded border-white/20 bg-surface-2"
+                  />
+                  Proxied
+                </label>
+                <button
+                  onClick={handleAddRecord}
+                  className="btn-primary text-xs"
                 >
-                  <option value="A">A</option>
-                  <option value="CNAME">CNAME</option>
-                  <option value="AAAA">AAAA</option>
-                  <option value="TXT">TXT</option>
-                  <option value="MX">MX</option>
-                </select>
+                  Create
+                </button>
               </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Name</label>
-                <input
-                  type="text"
-                  value={newRecord.name}
-                  onChange={(e) =>
-                    setNewRecord((r) => ({ ...r, name: e.target.value }))
-                  }
-                  placeholder="subdomain"
-                  className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Content</label>
-                <input
-                  type="text"
-                  value={newRecord.content}
-                  onChange={(e) =>
-                    setNewRecord((r) => ({ ...r, content: e.target.value }))
-                  }
-                  placeholder="10.0.0.1"
-                  className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-                />
-              </div>
-              <label className="flex items-center gap-2 text-sm text-gray-400">
-                <input
-                  type="checkbox"
-                  checked={newRecord.proxied}
-                  onChange={(e) =>
-                    setNewRecord((r) => ({ ...r, proxied: e.target.checked }))
-                  }
-                  className="rounded"
-                />
-                Proxied
-              </label>
-              <button
-                onClick={handleAddRecord}
-                className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-              >
-                Create
-              </button>
             </div>
           )}
 
-          <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+          <div className="card overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="px-3 py-2 text-left text-xs text-gray-500 font-medium">
+                <tr className="border-b border-white/[0.06]">
+                  <th className="px-4 py-3 text-left text-xs text-gray-500 font-semibold uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-3 py-2 text-left text-xs text-gray-500 font-medium">
+                  <th className="px-4 py-3 text-left text-xs text-gray-500 font-semibold uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-3 py-2 text-left text-xs text-gray-500 font-medium">
+                  <th className="px-4 py-3 text-left text-xs text-gray-500 font-semibold uppercase tracking-wider">
                     Content
                   </th>
-                  <th className="px-3 py-2 text-left text-xs text-gray-500 font-medium">
+                  <th className="px-4 py-3 text-left text-xs text-gray-500 font-semibold uppercase tracking-wider">
                     Proxy
                   </th>
-                  <th className="px-3 py-2" />
+                  <th className="px-4 py-3 w-12" />
                 </tr>
               </thead>
               <tbody>
@@ -310,14 +375,20 @@ export default function CloudflarePage() {
                 ))}
                 {recordsError && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-4 text-center">
-                      <p className="text-red-400 text-sm">{recordsError}</p>
+                    <td colSpan={5} className="px-4 py-6 text-center">
+                      <div className="flex items-center justify-center gap-2 text-sm text-red-400">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        {recordsError}
+                      </div>
                     </td>
                   </tr>
                 )}
                 {!recordsError && records.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-4 text-center text-gray-600 text-sm">
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-gray-600 text-sm"
+                    >
                       No DNS records found.
                     </td>
                   </tr>
