@@ -39,7 +39,7 @@ async function nomadFetch(path, options = {}) {
 
 // https://developer.hashicorp.com/nomad/api-docs/status
 export async function testConnection(url, token) {
-  const headers = { "Content-Type": "application/json" };
+  const headers = {};
   if (token) headers["X-Nomad-Token"] = token;
 
   const response = await fetch(
