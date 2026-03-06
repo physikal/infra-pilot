@@ -29,42 +29,32 @@ async function resolveAccessUrl(app) {
 
   try {
     const allocs = await nomad.getJobAllocations(app.nomad_job_id);
-    const running = allocs.find(
+    const runningStub = allocs.find(
       (a) => a.ClientStatus === "running"
     );
-    if (!running) return null;
+    if (!runningStub) return null;
 
-    const ports =
-      running.AllocatedResources?.Shared?.Ports ||
-      running.Resources?.Networks?.[0]?.DynamicPorts;
-    if (!ports) return null;
+    const alloc = await nomad.getAllocation(runningStub.ID);
 
-    const httpPort = Array.isArray(ports)
-      ? ports.find((p) => p.Label === "http")
-      : null;
-    if (!httpPort) return null;
+    const ports = alloc.AllocatedResources?.Shared?.Ports;
+    const httpPort = ports?.find((p) => p.Label === "http");
 
-    const hostPort = httpPort.Value ?? httpPort.HostPort;
-    if (!hostPort) return null;
-
-    const nodeIp =
-      httpPort.HostIP && httpPort.HostIP !== "0.0.0.0"
-        ? httpPort.HostIP
-        : running.NodeName;
-
-    if (nodeIp === running.NodeName) {
-      const nodes = await nomad.listNodes();
-      const node = nodes.find((n) => n.Name === running.NodeName);
-      if (node?.Address) {
-        return `http://${node.Address}:${hostPort}`;
-      }
-      if (node?.HTTPAddr) {
-        const ip = node.HTTPAddr.replace(/:\d+$/, "");
-        return `http://${ip}:${hostPort}`;
+    if (httpPort) {
+      const ip = httpPort.HostIP || alloc.AllocatedResources
+        ?.Shared?.Networks?.[0]?.IP;
+      if (ip && httpPort.Value) {
+        return `http://${ip}:${httpPort.Value}`;
       }
     }
 
-    return `http://${nodeIp}:${hostPort}`;
+    const dynPorts = alloc.Resources?.Networks?.[0]?.DynamicPorts;
+    const dynHttp = dynPorts?.find((p) => p.Label === "http");
+    if (dynHttp?.Value) {
+      const ip = alloc.Resources.Networks[0].IP;
+      if (ip) return `http://${ip}:${dynHttp.Value}`;
+    }
+
+    return null;
   } catch {
     return null;
   }

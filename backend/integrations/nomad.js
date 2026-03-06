@@ -112,6 +112,11 @@ export async function getJobAllocations(jobId) {
   return nomadFetch(`/job/${encodeURIComponent(jobId)}/allocations`);
 }
 
+// https://developer.hashicorp.com/nomad/api-docs/allocations#read-allocation
+export async function getAllocation(allocId) {
+  return nomadFetch(`/allocation/${encodeURIComponent(allocId)}`);
+}
+
 // https://developer.hashicorp.com/nomad/api-docs/client#read-allocation-logs
 export async function getAllocationLogs(allocId, taskName, logType = "stderr") {
   const config = getClient();
