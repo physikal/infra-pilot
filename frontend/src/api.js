@@ -148,6 +148,11 @@ export const api = {
       method: "PATCH",
       body: { name },
     }),
+  setBaseUrl: (url) =>
+    request("/settings/base-url", {
+      method: "PATCH",
+      body: { url },
+    }),
   getIntegrationDetails: (id) =>
     request(`/settings/integrations/${id}`),
   deleteIntegration: (id) =>

@@ -17,6 +17,7 @@ router.get("/", (_req, res) => {
   const integrations = getAllIntegrations();
   res.json({
     instanceName: getConfig("instance_name") || "Infra Pilot",
+    baseUrl: getConfig("base_url") || "",
     passwordEnabled: Boolean(getPasswordHash()),
     integrations,
   });
@@ -28,6 +29,12 @@ router.patch("/instance-name", (req, res) => {
     return res.status(400).json({ error: "Name is required" });
   }
   setConfig("instance_name", name.trim());
+  res.json({ ok: true });
+});
+
+router.patch("/base-url", (req, res) => {
+  const { url } = req.body;
+  setConfig("base_url", (url || "").replace(/\/$/, ""));
   res.json({ ok: true });
 });
 

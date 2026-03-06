@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 import {
   Rocket,
@@ -18,6 +18,48 @@ import {
   Container,
 } from "lucide-react";
 import { api } from "../api.js";
+
+function GitHubConnectCard() {
+  const formRef = useRef(null);
+  const [manifest, setManifest] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleConnect() {
+    setLoading(true);
+    try {
+      const m = await api.getGitHubManifest();
+      setManifest(JSON.stringify(m));
+      setTimeout(() => formRef.current?.submit(), 0);
+    } catch {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="card p-4 text-center">
+      <Github className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+      <p className="text-sm text-gray-400 mb-3">
+        Connect GitHub to deploy from your repos
+      </p>
+      <button
+        onClick={handleConnect}
+        disabled={loading}
+        className="btn-primary inline-flex items-center gap-2"
+      >
+        <Github className="w-4 h-4" />
+        {loading ? "Connecting..." : "Connect GitHub"}
+      </button>
+      <form
+        ref={formRef}
+        method="post"
+        action="https://github.com/settings/apps/new"
+        style={{ display: "none" }}
+      >
+        <input type="hidden" name="manifest" value={manifest || ""} />
+      </form>
+    </div>
+  );
+}
 
 const QUICK_DEPLOY = [
   {
@@ -390,19 +432,7 @@ function DeployWizardModal({ onClose, onDeployed, prefill }) {
                     Loading GitHub status...
                   </p>
                 ) : !githubStatus.connected ? (
-                  <div className="card p-4 text-center">
-                    <Github className="w-8 h-8 text-gray-600 mx-auto mb-3" />
-                    <p className="text-sm text-gray-400 mb-3">
-                      Connect GitHub to deploy from your repos
-                    </p>
-                    <a
-                      href="/settings?tab=github"
-                      className="btn-primary inline-flex items-center gap-2"
-                    >
-                      <Github className="w-4 h-4" />
-                      Connect GitHub
-                    </a>
-                  </div>
+                  <GitHubConnectCard />
                 ) : (
                   <div className="space-y-1.5 max-h-60 overflow-y-auto">
                     {githubRepos.length === 0 ? (

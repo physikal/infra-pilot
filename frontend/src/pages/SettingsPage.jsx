@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Settings,
   Pencil,
@@ -12,6 +13,8 @@ import {
   X,
   AlertTriangle,
   RefreshCw,
+  Github,
+  Globe,
 } from "lucide-react";
 import { api } from "../api.js";
 
@@ -308,6 +311,160 @@ function IntegrationCard({ integration, onReconfigure, onDelete }) {
   );
 }
 
+function GitHubConnectButton() {
+  const formRef = useRef(null);
+  const [manifest, setManifest] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleConnect() {
+    setLoading(true);
+    try {
+      const m = await api.getGitHubManifest();
+      setManifest(JSON.stringify(m));
+      // Submit after state update renders the hidden input
+      setTimeout(() => formRef.current?.submit(), 0);
+    } catch {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        onClick={handleConnect}
+        disabled={loading}
+        className="btn-primary flex items-center gap-2"
+      >
+        <Github className="w-4 h-4" />
+        {loading ? "Connecting..." : "Connect GitHub"}
+      </button>
+      <form
+        ref={formRef}
+        method="post"
+        action="https://github.com/settings/apps/new"
+        style={{ display: "none" }}
+      >
+        <input type="hidden" name="manifest" value={manifest || ""} />
+      </form>
+    </>
+  );
+}
+
+function GitHubSection() {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+
+  const githubResult = searchParams.get("github");
+  const githubMessage = searchParams.get("message");
+
+  useEffect(() => {
+    api
+      .getGitHubStatus()
+      .then(setStatus)
+      .catch(() => setStatus({ connected: false }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Github className="w-4 h-4 text-gray-500" />
+        <h3 className="text-sm font-semibold text-white">GitHub</h3>
+      </div>
+
+      {githubResult === "connected" && (
+        <div className="flex items-center gap-2 p-3 rounded-lg mb-4 text-sm bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
+          <Check className="w-4 h-4 shrink-0" />
+          GitHub App connected successfully. Install it on your repos to start
+          deploying.
+        </div>
+      )}
+
+      {githubResult === "error" && (
+        <div className="flex items-center gap-2 p-3 rounded-lg mb-4 text-sm bg-red-500/10 text-red-400 ring-1 ring-red-500/20">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          GitHub connection failed: {githubMessage || "Unknown error"}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="skeleton h-8 w-48 rounded-lg" />
+      ) : status?.connected ? (
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
+          <span className="text-sm text-white">Connected</span>
+          <span className="text-xs text-gray-500">
+            {status.repoCount} repos accessible
+          </span>
+        </div>
+      ) : (
+        <div>
+          <p className="text-sm text-gray-400 mb-3">
+            Connect a GitHub App to deploy from your repositories. This uses the
+            GitHub App Manifest flow — one click to set up.
+          </p>
+          <GitHubConnectButton />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BaseUrlSection({ currentUrl, onSaved }) {
+  const [url, setUrl] = useState(currentUrl || "");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await api.setBaseUrl(url.replace(/\/$/, ""));
+      setMessage("Saved");
+      onSaved();
+    } catch (err) {
+      setMessage(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Globe className="w-4 h-4 text-gray-500" />
+        <h3 className="text-sm font-semibold text-white">Base URL</h3>
+      </div>
+      <p className="text-xs text-gray-500 mb-3">
+        The public URL of this Infra Pilot instance. Required for GitHub App
+        integration callbacks.
+      </p>
+      <div className="flex gap-3">
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setMessage("");
+          }}
+          placeholder="https://infrapilot.example.com"
+          className="input-field flex-1"
+        />
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="btn-primary"
+        >
+          {saving ? "Saving..." : "Save"}
+        </button>
+      </div>
+      {message && (
+        <p className="text-xs mt-2 text-gray-400">{message}</p>
+      )}
+    </div>
+  );
+}
+
 function PasswordSection() {
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -525,6 +682,13 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
+
+        <BaseUrlSection
+          currentUrl={settings.baseUrl || ""}
+          onSaved={loadSettings}
+        />
+
+        <GitHubSection />
 
         <PasswordSection />
       </div>
