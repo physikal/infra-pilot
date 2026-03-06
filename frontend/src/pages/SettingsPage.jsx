@@ -566,14 +566,11 @@ export default function SettingsPage() {
     loadSettings();
   }
 
-  function openAddModal() {
-    const available = Object.keys(INTEGRATION_DEFS).filter(
-      (id) => !settings.integrations.some((i) => i.id === id)
-    );
-    if (available.length === 0) return;
-    setModalType(available[0]);
-    setModalTitle("Add Integration");
-  }
+  const [showAddPicker, setShowAddPicker] = useState(false);
+
+  const availableIntegrations = Object.keys(INTEGRATION_DEFS).filter(
+    (id) => !settings?.integrations.some((i) => i.id === id)
+  );
 
   function openReconfigureModal(id) {
     setModalType(id);
@@ -655,13 +652,33 @@ export default function SettingsPage() {
                 Integrations
               </h3>
             </div>
-            <button
-              onClick={openAddModal}
-              className="btn-primary text-xs flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Integration
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowAddPicker(!showAddPicker)}
+                disabled={availableIntegrations.length === 0}
+                className="btn-primary text-xs flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Integration
+              </button>
+              {showAddPicker && availableIntegrations.length > 0 && (
+                <div className="absolute right-0 top-full mt-1 w-48 bg-surface-1 border border-white/[0.06] rounded-lg shadow-xl z-10 py-1">
+                  {availableIntegrations.map((id) => (
+                    <button
+                      key={id}
+                      onClick={() => {
+                        setShowAddPicker(false);
+                        setModalType(id);
+                        setModalTitle(`Add ${INTEGRATION_DEFS[id].title}`);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+                    >
+                      {INTEGRATION_DEFS[id].title}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="space-y-2">
             {settings.integrations.length === 0 && (
