@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Settings,
@@ -312,41 +312,36 @@ function IntegrationCard({ integration, onReconfigure, onDelete }) {
 }
 
 function GitHubConnectButton() {
-  const formRef = useRef(null);
-  const [manifest, setManifest] = useState(null);
   const [loading, setLoading] = useState(false);
 
   async function handleConnect() {
     setLoading(true);
     try {
-      const m = await api.getGitHubManifest();
-      setManifest(JSON.stringify(m));
-      // Submit after state update renders the hidden input
-      setTimeout(() => formRef.current?.submit(), 0);
+      const manifest = await api.getGitHubManifest();
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "https://github.com/settings/apps/new";
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "manifest";
+      input.value = JSON.stringify(manifest);
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
     } catch {
       setLoading(false);
     }
   }
 
   return (
-    <>
-      <button
-        onClick={handleConnect}
-        disabled={loading}
-        className="btn-primary flex items-center gap-2"
-      >
-        <Github className="w-4 h-4" />
-        {loading ? "Connecting..." : "Connect GitHub"}
-      </button>
-      <form
-        ref={formRef}
-        method="post"
-        action="https://github.com/settings/apps/new"
-        style={{ display: "none" }}
-      >
-        <input type="hidden" name="manifest" value={manifest || ""} />
-      </form>
-    </>
+    <button
+      onClick={handleConnect}
+      disabled={loading}
+      className="btn-primary flex items-center gap-2"
+    >
+      <Github className="w-4 h-4" />
+      {loading ? "Connecting..." : "Connect GitHub"}
+    </button>
   );
 }
 

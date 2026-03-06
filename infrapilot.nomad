@@ -8,7 +8,7 @@ job "infrapilot" {
   }
 
   meta {
-    deploy_version = "8"
+    deploy_version = "9"
   }
 
   group "infrapilot" {
