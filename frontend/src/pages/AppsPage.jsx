@@ -813,10 +813,24 @@ function AppRow({ app, onAction }) {
       <div className="flex items-center gap-3 p-4">
         <StatusDot status={app.status} />
         <div className="flex-1 min-w-0">
-          <span className="text-white font-medium text-sm">{app.name}</span>
-          <span className="text-gray-600 text-xs ml-2 font-mono">
-            {app.image}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-white font-medium text-sm">{app.name}</span>
+            <span className="text-gray-600 text-xs font-mono">
+              {app.image}
+            </span>
+          </div>
+          {app.access_url && (
+            <a
+              href={app.access_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[11px] text-accent hover:text-accent-hover transition-colors inline-flex items-center gap-1 mt-0.5"
+            >
+              {app.access_url}
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+          )}
         </div>
         <StatusBadge status={app.status} />
         <div
@@ -849,9 +863,9 @@ function AppRow({ app, onAction }) {
               </button>
             </>
           )}
-          {app.domain && (
+          {app.access_url && (
             <a
-              href={`https://${app.domain}`}
+              href={app.access_url}
               target="_blank"
               rel="noopener noreferrer"
               className="p-1.5 rounded-md text-gray-500 hover:text-accent hover:bg-accent/10 transition-all"
@@ -1145,6 +1159,26 @@ function AppDetailView() {
           </button>
         </div>
       </div>
+
+      {app.access_url && (
+        <div className="card p-4 mb-6 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+            <ExternalLink className="w-4 h-4 text-accent" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500">Access URL</p>
+            <a
+              href={app.access_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-accent hover:text-accent-hover inline-flex items-center gap-1.5 font-medium"
+            >
+              {app.access_url}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </div>
+      )}
 
       <div className="card p-6">
         <h3 className="text-sm font-medium text-white mb-4">Overview</h3>

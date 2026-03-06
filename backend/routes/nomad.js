@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addActivity } from "../db.js";
+import { addActivity, getAllApps } from "../db.js";
 import * as nomad from "../integrations/nomad.js";
 
 const router = Router();
@@ -18,7 +18,16 @@ router.use(requireNomad);
 
 router.get("/jobs", async (_req, res, next) => {
   try {
-    res.json(await nomad.listJobs());
+    const jobs = await nomad.listJobs();
+    const apps = getAllApps();
+    const appJobIds = new Set(
+      apps.map((a) => a.nomad_job_id).filter(Boolean)
+    );
+    const enriched = jobs.map((job) => ({
+      ...job,
+      managed_by_app: appJobIds.has(job.ID) ? job.ID : null,
+    }));
+    res.json(enriched);
   } catch (err) {
     next(err);
   }

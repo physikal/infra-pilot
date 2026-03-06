@@ -16,6 +16,60 @@ const router = Router();
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
 
+async function resolveAccessUrl(app) {
+  if (app.routing === "external" && app.domain) {
+    return `https://${app.domain}`;
+  }
+
+  if (!app.port || !app.nomad_job_id || app.status !== "running") {
+    return null;
+  }
+
+  if (!nomad.isConfigured()) return null;
+
+  try {
+    const allocs = await nomad.getJobAllocations(app.nomad_job_id);
+    const running = allocs.find(
+      (a) => a.ClientStatus === "running"
+    );
+    if (!running) return null;
+
+    const ports =
+      running.AllocatedResources?.Shared?.Ports ||
+      running.Resources?.Networks?.[0]?.DynamicPorts;
+    if (!ports) return null;
+
+    const httpPort = Array.isArray(ports)
+      ? ports.find((p) => p.Label === "http")
+      : null;
+    if (!httpPort) return null;
+
+    const hostPort = httpPort.Value ?? httpPort.HostPort;
+    if (!hostPort) return null;
+
+    const nodeIp =
+      httpPort.HostIP && httpPort.HostIP !== "0.0.0.0"
+        ? httpPort.HostIP
+        : running.NodeName;
+
+    if (nodeIp === running.NodeName) {
+      const nodes = await nomad.listNodes();
+      const node = nodes.find((n) => n.Name === running.NodeName);
+      if (node?.Address) {
+        return `http://${node.Address}:${hostPort}`;
+      }
+      if (node?.HTTPAddr) {
+        const ip = node.HTTPAddr.replace(/:\d+$/, "");
+        return `http://${ip}:${hostPort}`;
+      }
+    }
+
+    return `http://${nodeIp}:${hostPort}`;
+  } catch {
+    return null;
+  }
+}
+
 function slugify(name) {
   return name
     .toLowerCase()
@@ -36,9 +90,16 @@ function validateName(name) {
 }
 
 // List all apps
-router.get("/", (_req, res, next) => {
+router.get("/", async (_req, res, next) => {
   try {
-    res.json(getAllApps());
+    const apps = getAllApps();
+    const enriched = await Promise.all(
+      apps.map(async (app) => ({
+        ...app,
+        access_url: await resolveAccessUrl(app),
+      }))
+    );
+    res.json(enriched);
   } catch (err) {
     next(err);
   }
@@ -59,7 +120,8 @@ router.get("/:id", async (req, res, next) => {
       }
     }
 
-    res.json({ ...app, nomad_status: nomadStatus });
+    const access_url = await resolveAccessUrl(app);
+    res.json({ ...app, nomad_status: nomadStatus, access_url });
   } catch (err) {
     next(err);
   }

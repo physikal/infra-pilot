@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Server,
   Play,
@@ -10,6 +11,7 @@ import {
   HardDrive,
   X,
   AlertTriangle,
+  Rocket,
 } from "lucide-react";
 import { api } from "../api.js";
 
@@ -146,6 +148,8 @@ function AllocationsView({ jobId }) {
 }
 
 function JobRow({ job, expanded, onToggle, onAction }) {
+  const navigate = useNavigate();
+
   return (
     <div className="card-hover">
       <div className="flex items-center gap-3 p-4">
@@ -164,6 +168,16 @@ function JobRow({ job, expanded, onToggle, onAction }) {
             {job.Name}
           </span>
           <span className="text-gray-600 text-xs ml-2">{job.Type}</span>
+          {job.managed_by_app && (
+            <button
+              onClick={() => navigate(`/apps/${job.managed_by_app}`)}
+              className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+              title="Managed by Apps — click to view"
+            >
+              <Rocket className="w-2.5 h-2.5" />
+              App
+            </button>
+          )}
         </div>
         <StatusBadge status={job.Status} />
         <div className="flex gap-1.5 ml-3">
