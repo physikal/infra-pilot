@@ -386,12 +386,30 @@ function GitHubSection() {
       {loading ? (
         <div className="skeleton h-8 w-48 rounded-lg" />
       ) : status?.connected ? (
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
-          <span className="text-sm text-white">Connected</span>
-          <span className="text-xs text-gray-500">
-            {status.repoCount} repos accessible
-          </span>
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
+            <span className="text-sm text-white">Connected</span>
+            <span className="text-xs text-gray-500">
+              {status.repoCount} repos accessible
+            </span>
+          </div>
+          {status.repoCount === 0 && status.installUrl && (
+            <div className="mt-3 p-3 rounded-lg bg-amber-500/10 ring-1 ring-amber-500/20">
+              <p className="text-sm text-amber-400 mb-2">
+                App created but not installed on any repos yet.
+              </p>
+              <a
+                href={status.installUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary inline-flex items-center gap-2 text-xs"
+              >
+                <Github className="w-3.5 h-3.5" />
+                Install on your repos
+              </a>
+            </div>
+          )}
         </div>
       ) : (
         <div>

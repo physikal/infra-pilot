@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getConfig, saveIntegration, addActivity } from "../db.js";
+import { getConfig, getIntegration, saveIntegration, addActivity } from "../db.js";
 import * as github from "../integrations/github.js";
 
 const router = Router();
@@ -64,7 +64,9 @@ router.get("/status", async (_req, res) => {
       // Installation might not exist yet
     }
 
-    res.json({ connected: true, repoCount });
+    const integration = getIntegration("github");
+    const htmlUrl = integration?.config?.htmlUrl || "";
+    res.json({ connected: true, repoCount, installUrl: htmlUrl ? `${htmlUrl}/installations/new` : "" });
   } catch (err) {
     res.json({ connected: false, error: err.message });
   }
