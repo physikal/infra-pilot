@@ -1,6 +1,310 @@
 import { useState, useEffect } from "react";
 import { api } from "../api.js";
 
+const INTEGRATION_DEFS = {
+  nomad: {
+    title: "Nomad",
+    fields: [
+      { key: "url", label: "API URL", placeholder: "http://your-nomad-server:4646", required: true },
+      { key: "token", label: "ACL Token", placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", type: "password" },
+    ],
+  },
+  proxmox: {
+    title: "Proxmox",
+    fields: [
+      { key: "url", label: "API URL", placeholder: "https://your-proxmox:8006", required: true },
+      { key: "node", label: "Default Node Name", placeholder: "pve" },
+      { key: "tokenId", label: "API Token ID", placeholder: "user@pam!token-name", required: true },
+      { key: "tokenSecret", label: "API Token Secret", placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", type: "password", required: true },
+    ],
+  },
+  cloudflare: {
+    title: "Cloudflare",
+    fields: [
+      { key: "apiToken", label: "API Token", placeholder: "your-cloudflare-api-token", type: "password", required: true },
+    ],
+  },
+  traefik: {
+    title: "Traefik",
+    fields: [
+      { key: "url", label: "API URL", placeholder: "http://your-traefik:8080", required: true },
+    ],
+  },
+};
+
+function AddIntegrationModal({ onClose, onSaved, existingIds }) {
+  const available = Object.keys(INTEGRATION_DEFS).filter(
+    (id) => !existingIds.includes(id)
+  );
+  const [selected, setSelected] = useState(available[0] || "");
+  const [values, setValues] = useState({});
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const def = INTEGRATION_DEFS[selected];
+
+  function reset(type) {
+    setSelected(type);
+    setValues({});
+    setTestResult(null);
+    setError("");
+  }
+
+  async function handleTest() {
+    setTesting(true);
+    setTestResult(null);
+    setError("");
+    try {
+      const result = await api.testIntegration(selected, values);
+      setTestResult(result);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await api.saveIntegration(selected, values);
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (available.length === 0) {
+    return (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+        <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md p-6">
+          <p className="text-gray-400">All integrations are already configured.</p>
+          <div className="flex justify-end mt-4">
+            <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const hasRequired = def?.fields
+    .filter((f) => f.required)
+    .every((f) => values[f.key]?.trim());
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md p-6">
+        <h3 className="text-lg font-bold text-white mb-4">Add Integration</h3>
+
+        <div className="flex gap-2 mb-4">
+          {available.map((id) => (
+            <button
+              key={id}
+              onClick={() => reset(id)}
+              className={`px-3 py-1.5 rounded text-sm ${
+                selected === id
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-800 text-gray-400 hover:text-white"
+              }`}
+            >
+              {INTEGRATION_DEFS[id].title}
+            </button>
+          ))}
+        </div>
+
+        {def && (
+          <div className="space-y-3 mb-4">
+            {def.fields.map((field) => (
+              <div key={field.key}>
+                <label className="block text-sm text-gray-400 mb-1">
+                  {field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <input
+                  type={field.type || "text"}
+                  value={values[field.key] || ""}
+                  onChange={(e) =>
+                    setValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                  }
+                  placeholder={field.placeholder}
+                  className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm
+                             focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {testResult && (
+          <div
+            className={`p-3 rounded mb-4 text-sm ${
+              testResult.ok
+                ? "bg-green-900/40 border border-green-700 text-green-300"
+                : "bg-red-900/40 border border-red-700 text-red-300"
+            }`}
+          >
+            {testResult.ok ? (
+              "Connection successful!"
+            ) : (
+              <>
+                <p>Connection failed: {testResult.error}</p>
+                {testResult.suggestion && (
+                  <p className="mt-1 text-gray-400">{testResult.suggestion}</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {error && <p className="text-red-400 mb-4 text-sm">{error}</p>}
+
+        <div className="flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white">
+            Cancel
+          </button>
+          <button
+            onClick={handleTest}
+            disabled={!hasRequired || testing}
+            className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600
+                       disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+          >
+            {testing ? "Testing..." : "Test Connection"}
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!testResult?.ok || saving}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700
+                       disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReconfigureModal({ integrationId, onClose, onSaved }) {
+  const def = INTEGRATION_DEFS[integrationId];
+  const [values, setValues] = useState({});
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!def) return null;
+
+  async function handleTest() {
+    setTesting(true);
+    setTestResult(null);
+    setError("");
+    try {
+      const result = await api.testIntegration(integrationId, values);
+      setTestResult(result);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await api.saveIntegration(integrationId, values);
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const hasRequired = def.fields
+    .filter((f) => f.required)
+    .every((f) => values[f.key]?.trim());
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md p-6">
+        <h3 className="text-lg font-bold text-white mb-4">
+          Reconfigure {def.title}
+        </h3>
+
+        <div className="space-y-3 mb-4">
+          {def.fields.map((field) => (
+            <div key={field.key}>
+              <label className="block text-sm text-gray-400 mb-1">
+                {field.label}
+                {field.required && <span className="text-red-400 ml-1">*</span>}
+              </label>
+              <input
+                type={field.type || "text"}
+                value={values[field.key] || ""}
+                onChange={(e) =>
+                  setValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                }
+                placeholder={field.placeholder}
+                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm
+                           focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          ))}
+        </div>
+
+        {testResult && (
+          <div
+            className={`p-3 rounded mb-4 text-sm ${
+              testResult.ok
+                ? "bg-green-900/40 border border-green-700 text-green-300"
+                : "bg-red-900/40 border border-red-700 text-red-300"
+            }`}
+          >
+            {testResult.ok ? "Connection successful!" : (
+              <>
+                <p>Connection failed: {testResult.error}</p>
+                {testResult.suggestion && (
+                  <p className="mt-1 text-gray-400">{testResult.suggestion}</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {error && <p className="text-red-400 mb-4 text-sm">{error}</p>}
+
+        <div className="flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white">
+            Cancel
+          </button>
+          <button
+            onClick={handleTest}
+            disabled={!hasRequired || testing}
+            className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600
+                       disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+          >
+            {testing ? "Testing..." : "Test Connection"}
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!testResult?.ok || saving}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700
+                       disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function IntegrationCard({ integration, onReconfigure, onDelete }) {
   const [details, setDetails] = useState(null);
   const [expanded, setExpanded] = useState(false);
@@ -136,6 +440,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [instanceName, setInstanceName] = useState("");
   const [editingName, setEditingName] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [reconfiguring, setReconfiguring] = useState(null);
 
   function loadSettings() {
     api
@@ -161,10 +467,6 @@ export default function SettingsPage() {
   async function handleDeleteIntegration(id) {
     await api.deleteIntegration(id);
     loadSettings();
-  }
-
-  function handleReconfigure(id) {
-    window.location.href = `/?reconfigure=${id}`;
   }
 
   if (loading) return <div className="text-gray-400">Loading...</div>;
@@ -214,9 +516,17 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <h3 className="text-sm font-medium text-gray-400 mb-3">
-            Integrations
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-400">
+              Integrations
+            </h3>
+            <button
+              onClick={() => setShowAdd(true)}
+              className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            >
+              Add Integration
+            </button>
+          </div>
           <div className="space-y-2">
             {settings.integrations.length === 0 && (
               <p className="text-gray-600 text-sm">
@@ -227,7 +537,7 @@ export default function SettingsPage() {
               <IntegrationCard
                 key={i.id}
                 integration={i}
-                onReconfigure={handleReconfigure}
+                onReconfigure={(id) => setReconfiguring(id)}
                 onDelete={handleDeleteIntegration}
               />
             ))}
@@ -236,6 +546,28 @@ export default function SettingsPage() {
 
         <PasswordSection />
       </div>
+
+      {showAdd && (
+        <AddIntegrationModal
+          existingIds={settings.integrations.map((i) => i.id)}
+          onClose={() => setShowAdd(false)}
+          onSaved={() => {
+            setShowAdd(false);
+            loadSettings();
+          }}
+        />
+      )}
+
+      {reconfiguring && (
+        <ReconfigureModal
+          integrationId={reconfiguring}
+          onClose={() => setReconfiguring(null)}
+          onSaved={() => {
+            setReconfiguring(null);
+            loadSettings();
+          }}
+        />
+      )}
     </div>
   );
 }
