@@ -5,13 +5,19 @@ description: Internal vs external routing for deployed apps.
 
 ## Internal Routing
 
-Apps deployed with **internal** routing are accessible within the Nomad cluster only. The Nomad service block uses `provider = "nomad"` for service discovery, but no Traefik tags are added.
+Apps deployed with **internal** routing use dynamic ports assigned by Nomad. The Nomad service block uses `provider = "nomad"` for service discovery, but no Traefik tags or DNS records are added.
+
+### Accessing Internal Apps
+
+Infra Pilot automatically resolves the access URL for internal apps by querying the Nomad allocation for the dynamically assigned host port and node IP. For example, an app with container port 3001 might be accessible at `http://192.168.1.115:24983`.
+
+The access URL is shown in the app list and detail page. Since the port is dynamically assigned, it may change if the app is restarted or rescheduled to a different node.
 
 Internal apps are useful for:
 
 - Backend services that other apps connect to
 - Databases and caches
-- Services not meant to be publicly accessible
+- Tools you want accessible on your LAN but not publicly
 
 ## External Routing
 

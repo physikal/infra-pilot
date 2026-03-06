@@ -30,6 +30,7 @@ Nomad is the core orchestrator for Infra Pilot. It's required for the App Platfo
 ### Allocations
 
 - **List allocations** — `GET /v1/job/{id}/allocations`
+- **Get allocation detail** — `GET /v1/allocation/{id}` — Used to resolve dynamic ports and node IPs for app access URLs
 - **Read logs** — `GET /v1/client/fs/logs/{allocId}`
 
 ### Variables (Secrets)
@@ -65,6 +66,6 @@ node {
 
 The Nomad management page provides:
 
-- **Jobs tab** — List all jobs with status, type, and action buttons. Expand a job to see its allocations.
+- **Jobs tab** — List all jobs with status, type, and action buttons. Expand a job to see its allocations. Jobs managed by the App Platform are tagged with an **"App"** badge that links to the app detail page.
 - **Nodes tab** — List all cluster nodes with status, datacenter, and available drivers.
 - **Deploy** — Paste raw HCL to deploy any job spec directly.

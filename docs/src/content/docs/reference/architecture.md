@@ -23,6 +23,7 @@ Infra Pilot is a monolithic Node.js application with a React frontend, bundled i
 │  │  /api/apps     → apps.js  │  │
 │  │  /api/github   → gh.js    │  │
 │  │  /api/settings → set.js   │  │
+│  │  /docs/*       → Starlight│
 │  │  /*            → SPA      │  │
 │  └───────────┬───────────────┘  │
 │              │                  │

@@ -70,6 +70,7 @@ Credentials are only stored encrypted and decrypted on-demand. The Settings page
 The Dockerfile uses a multi-stage build:
 
 1. **Stage 1 (frontend-build)**: Installs frontend deps, runs `vite build`
-2. **Stage 2 (runtime)**: Installs backend deps (production only), copies backend code + built frontend
-3. Uses `tini` as init process and Alpine for minimal image size
-4. Health check built in via `wget` to `/health`
+2. **Stage 2 (docs-build)**: Installs Astro/Starlight deps, builds the documentation site
+3. **Stage 3 (runtime)**: Installs backend deps (production only), copies backend code + built frontend + built docs at `/docs`
+4. Uses `tini` as init process and Alpine for minimal image size
+5. Health check built in via `wget` to `/health`

@@ -25,8 +25,8 @@ All endpoints are prefixed with `/api`. Responses are JSON.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/apps` | List all apps |
-| `GET` | `/apps/:id` | Get app detail + live Nomad status |
+| `GET` | `/apps` | List all apps (includes `access_url`) |
+| `GET` | `/apps/:id` | Get app detail + live Nomad status + `access_url` |
 | `POST` | `/apps` | Deploy a new app |
 | `POST` | `/apps/:id/stop` | Stop app (Nomad job) |
 | `POST` | `/apps/:id/start` | Start app (re-deploy from config) |
@@ -57,13 +57,14 @@ All endpoints are prefixed with `/api`. Responses are JSON.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/nomad/jobs` | List all jobs |
+| `GET` | `/nomad/jobs` | List all jobs (includes `managed_by_app` for App Platform jobs) |
 | `GET` | `/nomad/jobs/:id` | Get job detail |
 | `POST` | `/nomad/jobs/deploy` | Deploy HCL job. Body: `{ hcl }` |
 | `POST` | `/nomad/jobs/:id/stop` | Stop a job |
 | `POST` | `/nomad/jobs/:id/restart` | Restart a job |
 | `POST` | `/nomad/jobs/:id/scale` | Scale job. Body: `{ group, count }` |
 | `GET` | `/nomad/jobs/:id/allocations` | List job allocations |
+| `GET` | `/nomad/allocations/:allocId` | Get full allocation detail (ports, resources) |
 | `GET` | `/nomad/nodes` | List cluster nodes |
 
 ## Cloudflare

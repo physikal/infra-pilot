@@ -34,6 +34,7 @@ Infra Pilot brings these together into a single portal where you can:
 - **Dynamic infrastructure** — No hardcoded IPs, hostnames, or cluster sizes. Adapts to your environment via APIs
 - **Encrypted secrets** — Integration credentials and app environment variables are encrypted at rest
 - **Single binary** — Ships as a single Docker image with an embedded SQLite database
+- **Built-in docs** — Starlight documentation site served at `/docs` inside the same container
 
 ## Tech Stack
 
