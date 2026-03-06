@@ -123,6 +123,7 @@ export default function CloudflarePage() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [recordsError, setRecordsError] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [newRecord, setNewRecord] = useState({
     type: "A",
@@ -144,10 +145,17 @@ export default function CloudflarePage() {
 
   function loadRecords(zoneId) {
     setSelectedZone(zoneId);
+    setRecordsError("");
     api
       .getCloudflareDNS(zoneId)
       .then(setRecords)
-      .catch((err) => setError(err.message));
+      .catch((err) => {
+        setRecords([]);
+        const msg = err.message.includes("Authentication")
+          ? "DNS record access denied. Ensure your Cloudflare API token has the 'Zone - DNS Record - Read' permission."
+          : err.message;
+        setRecordsError(msg);
+      });
   }
 
   async function handleQuickAdd(zoneId, domain, ip) {
@@ -300,7 +308,14 @@ export default function CloudflarePage() {
                     onRefresh={() => loadRecords(selectedZone)}
                   />
                 ))}
-                {records.length === 0 && (
+                {recordsError && (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-4 text-center">
+                      <p className="text-red-400 text-sm">{recordsError}</p>
+                    </td>
+                  </tr>
+                )}
+                {!recordsError && records.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-3 py-4 text-center text-gray-600 text-sm">
                       No DNS records found.
