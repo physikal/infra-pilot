@@ -11,6 +11,8 @@ import proxmoxRoutes from "./routes/proxmox.js";
 import cloudflareRoutes from "./routes/cloudflare.js";
 import traefikRoutes from "./routes/traefik.js";
 import settingsRoutes from "./routes/settings.js";
+import appsRoutes from "./routes/apps.js";
+import githubRoutes from "./routes/github.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -31,6 +33,8 @@ app.use("/api/proxmox", proxmoxRoutes);
 app.use("/api/cloudflare", cloudflareRoutes);
 app.use("/api/traefik", traefikRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/apps", appsRoutes);
+app.use("/api/github", githubRoutes);
 
 const publicDir = join(__dirname, "public");
 if (existsSync(publicDir)) {

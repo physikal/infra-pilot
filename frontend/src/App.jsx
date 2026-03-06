@@ -14,6 +14,7 @@ import {
   Network,
   Settings,
   Compass,
+  Rocket,
 } from "lucide-react";
 import { api } from "./api.js";
 import SetupWizard from "./pages/SetupWizard.jsx";
@@ -23,9 +24,11 @@ import ProxmoxPage from "./pages/ProxmoxPage.jsx";
 import CloudflarePage from "./pages/CloudflarePage.jsx";
 import TraefikPage from "./pages/TraefikPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
+import AppsPage from "./pages/AppsPage.jsx";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/apps", label: "Apps", icon: Rocket },
   { to: "/nomad", label: "Nomad", icon: Server },
   { to: "/proxmox", label: "Proxmox", icon: Monitor },
   { to: "/cloudflare", label: "Cloudflare", icon: Globe },
@@ -160,6 +163,7 @@ export default function App() {
           <div className="max-w-6xl animate-fade-in">
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/apps/*" element={<AppsPage />} />
               <Route path="/nomad" element={<NomadPage />} />
               <Route path="/proxmox" element={<ProxmoxPage />} />
               <Route path="/cloudflare" element={<CloudflarePage />} />

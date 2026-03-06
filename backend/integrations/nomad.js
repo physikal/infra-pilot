@@ -142,6 +142,21 @@ export async function listNodes() {
   return nomadFetch("/nodes");
 }
 
+// https://developer.hashicorp.com/nomad/api-docs/variables#create-variable
+export async function putVariable(path, items) {
+  return nomadFetch(`/var/${encodeURIComponent(path)}`, {
+    method: "PUT",
+    body: JSON.stringify({ Path: path, Items: items }),
+  });
+}
+
+// https://developer.hashicorp.com/nomad/api-docs/variables#delete-variable
+export async function deleteVariable(path) {
+  return nomadFetch(`/var/${encodeURIComponent(path)}`, {
+    method: "DELETE",
+  });
+}
+
 export function isConfigured() {
   return getClient() !== null;
 }

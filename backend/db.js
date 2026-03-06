@@ -32,6 +32,26 @@ db.exec(`
     message    TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS apps (
+    id             TEXT PRIMARY KEY,
+    name           TEXT NOT NULL UNIQUE,
+    source_type    TEXT NOT NULL,
+    image          TEXT NOT NULL,
+    source_meta    TEXT NOT NULL DEFAULT '{}',
+    cpu            INTEGER NOT NULL DEFAULT 200,
+    memory         INTEGER NOT NULL DEFAULT 256,
+    port           INTEGER,
+    env_vars       TEXT NOT NULL DEFAULT '{}',
+    routing        TEXT NOT NULL DEFAULT 'internal',
+    domain         TEXT,
+    zone_id        TEXT,
+    dns_record_ids TEXT,
+    nomad_job_id   TEXT,
+    status         TEXT NOT NULL DEFAULT 'pending',
+    created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 const stmts = {
@@ -57,6 +77,34 @@ const stmts = {
   getRecentActivity: db.prepare(
     "SELECT * FROM activity ORDER BY created_at DESC LIMIT ?"
   ),
+  getApp: db.prepare("SELECT * FROM apps WHERE id = ?"),
+  getAllApps: db.prepare(
+    "SELECT * FROM apps ORDER BY created_at DESC"
+  ),
+  upsertApp: db.prepare(
+    `INSERT INTO apps (id, name, source_type, image, source_meta, cpu, memory, port, env_vars, routing, domain, zone_id, dns_record_ids, nomad_job_id, status, updated_at)
+     VALUES (@id, @name, @source_type, @image, @source_meta, @cpu, @memory, @port, @env_vars, @routing, @domain, @zone_id, @dns_record_ids, @nomad_job_id, @status, datetime('now'))
+     ON CONFLICT(id) DO UPDATE SET
+       name = excluded.name,
+       source_type = excluded.source_type,
+       image = excluded.image,
+       source_meta = excluded.source_meta,
+       cpu = excluded.cpu,
+       memory = excluded.memory,
+       port = excluded.port,
+       env_vars = excluded.env_vars,
+       routing = excluded.routing,
+       domain = excluded.domain,
+       zone_id = excluded.zone_id,
+       dns_record_ids = excluded.dns_record_ids,
+       nomad_job_id = excluded.nomad_job_id,
+       status = excluded.status,
+       updated_at = datetime('now')`
+  ),
+  updateAppStatus: db.prepare(
+    "UPDATE apps SET status = ?, updated_at = datetime('now') WHERE id = ?"
+  ),
+  deleteApp: db.prepare("DELETE FROM apps WHERE id = ?"),
 };
 
 export function getConfig(key) {
@@ -115,6 +163,55 @@ export function getPasswordHash() {
 
 export function setPasswordHash(hash) {
   setConfig("password_hash", hash);
+}
+
+export function getApp(id) {
+  const row = stmts.getApp.get(id);
+  if (!row) return null;
+  return {
+    ...row,
+    env_vars: JSON.parse(decrypt(row.env_vars)),
+    source_meta: JSON.parse(row.source_meta),
+    dns_record_ids: row.dns_record_ids ? JSON.parse(row.dns_record_ids) : [],
+  };
+}
+
+export function getAllApps() {
+  return stmts.getAllApps.all().map((row) => ({
+    ...row,
+    source_meta: JSON.parse(row.source_meta),
+    dns_record_ids: row.dns_record_ids ? JSON.parse(row.dns_record_ids) : [],
+  }));
+}
+
+export function upsertApp(app) {
+  stmts.upsertApp.run({
+    id: app.id,
+    name: app.name,
+    source_type: app.source_type,
+    image: app.image,
+    source_meta: JSON.stringify(app.source_meta || {}),
+    cpu: app.cpu || 200,
+    memory: app.memory || 256,
+    port: app.port || null,
+    env_vars: encrypt(JSON.stringify(app.env_vars || {})),
+    routing: app.routing || "internal",
+    domain: app.domain || null,
+    zone_id: app.zone_id || null,
+    dns_record_ids: app.dns_record_ids
+      ? JSON.stringify(app.dns_record_ids)
+      : null,
+    nomad_job_id: app.nomad_job_id || null,
+    status: app.status || "pending",
+  });
+}
+
+export function updateAppStatus(id, status) {
+  stmts.updateAppStatus.run(status, id);
+}
+
+export function deleteAppFromDb(id) {
+  stmts.deleteApp.run(id);
 }
 
 export default db;

@@ -121,6 +121,26 @@ export const api = {
   getTraefikServices: () => request("/traefik/services"),
   getTraefikOverview: () => request("/traefik/overview"),
 
+  // Apps
+  getApps: () => request("/apps"),
+  getApp: (id) => request(`/apps/${id}`),
+  deployApp: (config) =>
+    request("/apps", { method: "POST", body: config }),
+  stopApp: (id) =>
+    request(`/apps/${id}/stop`, { method: "POST" }),
+  startApp: (id) =>
+    request(`/apps/${id}/start`, { method: "POST" }),
+  restartApp: (id) =>
+    request(`/apps/${id}/restart`, { method: "POST" }),
+  deleteApp: (id) =>
+    request(`/apps/${id}`, { method: "DELETE" }),
+  searchDockerHub: (q) => request(`/apps/search/dockerhub?q=${encodeURIComponent(q)}`),
+  getGitHubRepos: () => request("/apps/search/github-repos"),
+
+  // GitHub
+  getGitHubStatus: () => request("/github/status"),
+  getGitHubManifest: () => request("/github/manifest"),
+
   // Settings
   getSettings: () => request("/settings"),
   updateInstanceName: (name) =>
