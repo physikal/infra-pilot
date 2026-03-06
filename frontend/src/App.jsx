@@ -15,6 +15,7 @@ import {
   Settings,
   Compass,
   Rocket,
+  BookOpen,
 } from "lucide-react";
 import { api } from "./api.js";
 import SetupWizard from "./pages/SetupWizard.jsx";
@@ -86,7 +87,16 @@ function Sidebar({ instanceName }) {
         ))}
       </nav>
 
-      <div className="px-3 pb-3 mt-auto">
+      <div className="px-3 pb-3 mt-auto space-y-0.5">
+        <a
+          href="/docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 text-gray-500 hover:text-gray-300 hover:bg-white/[0.04]"
+        >
+          <BookOpen className="w-4 h-4 text-gray-600" />
+          Docs
+        </a>
         <NavLink
           to="/settings"
           className={({ isActive }) =>
